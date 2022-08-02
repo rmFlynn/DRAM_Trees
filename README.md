@@ -1,2 +1,2 @@
 # DRAM_Trees
-Impliment Phylogenetic trees in dram
+**A tool to implement Phylogenetic trees in DRAM**
