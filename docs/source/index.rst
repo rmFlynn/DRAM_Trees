@@ -14,6 +14,16 @@ Introducing Tree Kit For DRAM
 ## Usage
 Coming soon
 
+### Input Options
+
+### Output to expect
+
+## Status
+At this point there are 2 tree files (nxr_nar, and pmoa_amoa) and one working tree (nxr_nar). Each has a mapping that takes leaves and reduces them to calls, then the call that is closessed is applied. but all data is saved a stronger tree based method is still in dev and may not be needed? These mappings are from the excell file you provied but modified it. To start with the calls did not make sense to me, nore did the adjectives, so I droped them. I droped the genome info keeping only the gene, the call+adjective and the tree. then I split them by tree. 
+
+At this time there are 4 mutualy exclusive clasifications in the Nxr/Nar tree and they are 'other-None', 'nxr-None', 'nxr-Nitrifier', 'nxr/nar-N utilization', 'narG-N reducer', this is the first thing that needs to be tweeked
+
+
 The Process
 =====================
 
