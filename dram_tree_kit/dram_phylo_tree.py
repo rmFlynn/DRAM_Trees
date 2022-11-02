@@ -8,6 +8,7 @@ import pandas as pd
 import tempfile
 # import matplotlib.pyplot as plt
 from dram_tree_kit import __version__
+
 from tempfile import TemporaryDirectory
 from mag_annotator.utils import run_process
 from mag_annotator.utils import setup_logger
@@ -30,6 +31,7 @@ os.system('dram_tree_kit//dram_phylo_tree.py -a ./example_one/all_bins_combined_
 os.system('ls ')
 
 """
+
 NXR_NAR_TREE = DramTree(pplacer_profile='./data/dram_trees/nxr_nar/nxr_nar.refpkg', 
                 target_ids = ['K11180', 'dsrA', 'dsrB', 'K11181'],
                 reference_seq=('./data/dram_trees/nxr_nar/'
@@ -43,6 +45,16 @@ def color_tree(tree):
 
 def extract_enigmatic_genes(annotation_ids:pd.DataFrame, gene_fasta, work_dir, 
                             target_ids:set, logger) -> (pd.DataFrame, str):
+    """
+    :param annotation_ids: annotations from dram run
+    :param gene_fasta: faa from dram run
+    :param work_dir: Temp files here
+    :param target_ids: ID set needing phylo info, used to filter genes
+    :param logger: Standard DRAM logger
+    :returns: The path to the ambiguous genes in a fasta file
+
+    Takes in a fasta file of genes and a list of ids in the dram annotation, and returns a filtered fasta to match.
+    """
     output_fasta = os.path.join(work_dir, 'trim.faa')
     ids_keep = ids[annotation_ids.apply(lambda x: len(x.intersection(target_ids))>0)]
     output_fasta_generator = (i for i in read_sq(gene_fasta, format='fasta') 
@@ -104,12 +116,14 @@ def dram_tree_kit(
         trimed_fa = extract_enigmatic_genes(annotation_ids, gene_fasta, work_dir, 
                                 tree.target_ids, logger)
         jplace_file = tree.pplacer_place_sequences(trimed_fa, work_dir, threads=cores)
+        breakpoint()
 
 #gup
 #
 #output_dir = './'
 #query_faa = "./../second_try/query.faa"
 #query_faa = '../first_try/example_one/all_bins_combined_3217db_genes.faa'
+dram_tr
 
 
 # pplacer/guppy columns in one place for reference
@@ -151,12 +165,13 @@ def lable_tree_distance(tree, jplace:str, annotations:pd.DataFrame,
 
 def lable_tree_placement(tree, jplace:str, annotations:pd.DataFrame,
                          logger:logging.Logger):
-    place_tree_txt = run_process(['guppy', 'tog', '-o', 'jplace_to_tree', jplace_file,], logger, capture_stdout=True)
+    pass
+place_tree_txt = run_process(['guppy', 'tog', '-o', 'jplace_to_tree', jplace_file,], logger, capture_stdout=True)
+' '.join(['guppy', 'tog', '-o', 'jplace_to_tree', jplace_file,])
 
 tree = NXR_NAR_TREE
 lable_tree_placement(tree, jplace, annotations, logger)
 treeph = phy.read('jplace_to_tree', format="newick")
-list(nx.topological_sort(treenx))[0]
 import graphviz
 phy.draw_ascii(treeph)
 color_map = {'nxr/nar-N utilization': 'purple', 
@@ -204,7 +219,7 @@ for cl in treeph.get_terminals():
     cl = add_color
     
 
-phy.write(treeph, 'color_tree_all.xml', 'phyloxml')
+phy.write(treeph, 'color_tree_all.xml', 'newick')
 
 if __name__ == '__main__':
     dram_tree_kit()
@@ -214,79 +229,4 @@ with open(jplace_file) as jp_to_load:
     place_dict = json.load(jp_to_load)
 
 
-# nx.
-# distances.apply(distance_to_call, axis=1).dropna(axis=0, how='any')
-# .dropna()
-#              
-# distances.apply()
-# 
-# MAPPING_CALL_COl = 'call'
-        
-
-# tree.mapping['Tree'].unique()
-# tree.mapping.columns = ['genome', 'tree', 'call', 'adjective']
-# tree.mapping['call'] = tree.mapping['call'] + "-" +  tree.mapping['adjective']
-# tree.mapping.index.name = 'gene'
-# tree.mapping['adjective'].unique()
-# tree.mapping.drop(['adjective', 'genome'], axis=1, inplace=True)
-# nxr_nar = tree.mapping[tree.mapping['tree'] == 'nxr/nar'].drop('tree', axis=1)
-# pmoa_amoa= tree.mapping[tree.mapping['tree'] == 'pmoA/amoA'].drop('tree', axis=1)
-# nxr_nar.call.unique()
-# tree.mapping.to_csv('data/dram_trees/all-tree-mapping.tsv', sep='\t')
-# nxr_nar.to_csv('data/dram_trees/nxr_nar/nxr-nar-tree-mapping.tsv', sep='\t')
-# pmoa_amoa.to_csv('data/dram_trees/pmoa_amoa/pmoa_amoa-tree-mapping.tsv', sep='\t')
-
-
-# treenx = phy.to_networkx(treeph)
-# write_dot(treenx, 'test_dot_tree.dot')
-# treenx.nodes[Clade(branch_length=0.0301382, confidence=0.987)]
-# [i for i in nx.bfs_edges(treenx, 'WP_042250442|Nitrospina_gracilis')]
- 
-# tree.mapping
-
-
-
-
-
-
-# tree = TREES[0].tree
-# mapping = TREES[0].mapping
-# terminals = {i.name for i in tree.get_terminals()}
-# mapping = mapping.loc[list(terminals.intersection(set(mapping.index)))]
-# mapping.loc['gunnisonriver_2019_sw_WHONDRS-S19S_0062_A_bin.22_Ga0451722_0001801_3']
-# mapping['Call based on tree'].unique()
-# 
-
-# 
-# plt.clf()
-# fig = plt.subfigure(figsize=(50, 10))
-# fig = plt.figure(figsize=(50, 10))
-# axes = fig.add_axes([0.5, 1, 0.5, 1])
-# 
-# phy.draw(tree, rcParams["figure.figsize"]=(20,3))
 phy.draw_ascii(treeph)
-# plt.savefig('tree_nodes.pdf', dpi=600, )
-# 
-# import networkx as nx
-# import pydot
-# from networkx.drawing.nx_pydot import graphviz_layout
-# treenx = phy.to_networkx(tree)
-# pos = graphviz_layout(treenx, prog="dot")
-# nx.draw(T, pos)
-# networkx.graphviz_layout = nx_agraph.graphviz_layout
-# phy.draw_ascii(tree, prog='dot')
-# 
-# tree.tree
-# tree.name
-# py
-# 
-# tree.get_path(tree.get_terminals()[1].name)[-1]
-# 
-# # tree = phy.read("./bipartitionsBranchLabels.dsr_genes_for_tree_aligned.faa_mode_low.renamed", "newick")
-# ls $NXR_NAR
-# TREE=$NXR_NAR
-# print(tree)
-# tree.get_path(tree.get_terminals()[1].name)[-1]
-# __version__ = '0.0.1'
-
-
