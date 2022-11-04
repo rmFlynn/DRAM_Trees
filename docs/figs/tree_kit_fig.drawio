@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2022-11-04T15:04:47.374Z" agent="5.0 (X11)" etag="gesBPiU4IdvnOiJHO75p" version="20.5.1" type="github">
+<mxfile host="app.diagrams.net" modified="2022-11-04T15:15:16.188Z" agent="5.0 (X11)" etag="NRcwbNFuJH5upWYhBX6k" version="20.5.1" type="github">
   <diagram id="Rtj_xhAMCjtNW2K5r0i-" name="Page-1">
     <mxGraphModel dx="2007" dy="826" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -8,7 +8,7 @@
           <mxGeometry x="-683" y="650" width="223" height="90" as="geometry" />
         </mxCell>
         <mxCell id="cmLPi3Eq9WUsnecLFcOw-14" value="" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;" parent="1" vertex="1">
-          <mxGeometry x="-550" y="92" width="468" height="394" as="geometry" />
+          <mxGeometry x="-550" y="92" width="650" height="498" as="geometry" />
         </mxCell>
         <mxCell id="cmLPi3Eq9WUsnecLFcOw-10" value="other" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#647687;fontColor=#ffffff;strokeColor=#314354;" parent="1" vertex="1">
           <mxGeometry x="-674" y="265" width="91" height="50" as="geometry" />
@@ -58,8 +58,7 @@
             <mxPoint x="-580" y="383" as="targetPoint" />
             <Array as="points">
               <mxPoint x="-419" y="430" />
-              <mxPoint x="-540" y="430" />
-              <mxPoint x="-540" y="380" />
+              <mxPoint x="-571" y="430" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -108,20 +107,32 @@
         <mxCell id="cmLPi3Eq9WUsnecLFcOw-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;fontSize=12;fillColor=#fa6800;strokeColor=#C73500;" parent="1" source="cmLPi3Eq9WUsnecLFcOw-36" target="cmLPi3Eq9WUsnecLFcOw-39" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="cmLPi3Eq9WUsnecLFcOw-36" value="Deturmine definitve gene landings" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillColor=#fa6800;fontColor=#000000;strokeColor=#C73500;" parent="1" vertex="1">
+        <mxCell id="cmLPi3Eq9WUsnecLFcOw-36" value="Deturmine definitve gene landings" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillColor=#e51400;fontColor=#ffffff;strokeColor=#B20000;" parent="1" vertex="1">
           <mxGeometry x="-416" y="412" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="cmLPi3Eq9WUsnecLFcOw-41" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontSize=12;fillColor=#fa6800;strokeColor=#C73500;" parent="1" source="cmLPi3Eq9WUsnecLFcOw-39" target="cmLPi3Eq9WUsnecLFcOw-17" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="cmLPi3Eq9WUsnecLFcOw-39" value="Check Distances for more hits" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillColor=#fa6800;fontColor=#000000;strokeColor=#C73500;" parent="1" vertex="1">
+        <mxCell id="cmLPi3Eq9WUsnecLFcOw-39" value="Check Distances for more hits" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillColor=#e51400;fontColor=#ffffff;strokeColor=#B20000;" parent="1" vertex="1">
           <mxGeometry x="-530" y="343.5" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="cmLPi3Eq9WUsnecLFcOw-48" value="New annotations.tsv (make a replace option) includs confidence for maximum liklyhood placement. " style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#6d8764;fontColor=#ffffff;strokeColor=#3A5431;" parent="1" vertex="1">
+        <mxCell id="cmLPi3Eq9WUsnecLFcOw-48" value="New annotations.tsv (make a replace option) includs confidence for maximum liklyhood placement, tree labels, and a explanation for the labels. " style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#6d8764;fontColor=#ffffff;strokeColor=#3A5431;" parent="1" vertex="1">
           <mxGeometry x="-683" y="580" width="224" height="90" as="geometry" />
         </mxCell>
         <mxCell id="cmLPi3Eq9WUsnecLFcOw-50" value="For each tree" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" parent="1" vertex="1">
           <mxGeometry x="-399" y="291" width="86" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="9F3Nqchgk1eRThmT6uBu-2" value="gene_map" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#e3c800;fontColor=#000000;strokeColor=#B09500;" vertex="1" parent="1">
+          <mxGeometry x="-818" y="368" width="91" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="9F3Nqchgk1eRThmT6uBu-3" value="color_map" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#e3c800;fontColor=#000000;strokeColor=#B09500;" vertex="1" parent="1">
+          <mxGeometry x="-818" y="329" width="91" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="9F3Nqchgk1eRThmT6uBu-4" value="tree" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#e3c800;fontColor=#000000;strokeColor=#B09500;" vertex="1" parent="1">
+          <mxGeometry x="-818" y="291" width="91" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="9F3Nqchgk1eRThmT6uBu-5" value="sickel" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#e3c800;fontColor=#000000;strokeColor=#B09500;" vertex="1" parent="1">
+          <mxGeometry x="-818" y="255" width="91" height="60" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
