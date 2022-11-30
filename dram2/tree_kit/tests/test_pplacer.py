@@ -1,5 +1,5 @@
 import pytest
-from 
+from dram_tree_kit
 
 logger = logging.getLogger('dram_tree_log')
 tree = DramTree(pplacer_profile='./data/dram_trees/nxr_nar/nxr_nar.refpkg', 

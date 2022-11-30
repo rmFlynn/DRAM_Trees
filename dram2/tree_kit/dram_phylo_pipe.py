@@ -1,7 +1,8 @@
 """
 This program add profiles based on phylogentic trees into dram. The key to this process is pplacer which places leaves into pre-exitsting trees
 
-note Pplacer uses about 1/4 of the memory when placing on a FastTree tree as compared to a RAxML tree inferred with GTRGAMMA. If your reads are short and in a fixed region, the memory used by pplacer v1.1 alpha08 (or later) scales with respect to the total number of non-gap columns in your query alignment. You can also make it use less memory (and run faster) by cutting down the size of your reference tree.
+NOTE pplacer uses about 1/4 of the memory when placing on a FastTree tree as compared to a RAxML tree inferred with GTRGAMMA. If your reads are short and in a fixed region, the memory used by pplacer v1.1 alpha08 (or later) scales with respect to the total number of non-gap columns in your query alignment. You can also make it use less memory (and run faster) by cutting down the size of your reference tree.
+TODO switch to FastTree
 """
 
 # import tempfile
@@ -12,22 +13,23 @@ note Pplacer uses about 1/4 of the memory when placing on a FastTree tree as com
 # from pyvis.network import Network
 # import networkx as nx
 import os
-from typing import Any
 from collections import namedtuple
+from functools import partial
 import click
 import logging
 import pandas as pd
-from dram_tree_kit import __version__
 from tempfile import TemporaryDirectory
+# from dram2.tree_kit import __version__
+# from dram2.tree_kit.pplacer import DramTree
+__version__ = "tmp"
+from pplacer import DramTree
 from dram2.utils import run_process, setup_logger
 from dram2.summarize_genomes import get_ids_from_annotations_by_row
-from Bio import Phylo as phy
-from dram_tree_kit.pplacer import DramTree
 from skbio import write as write_sq
 from skbio import read as read_sq
+from Bio import Phylo as phy
 from Bio.Phylo.BaseTree import Clade
 from Bio.Phylo.Newick import Tree
-from functools import partial
 
 NXR_NAR_TREE = DramTree(
     name="nxr_nar",
@@ -49,7 +51,7 @@ MAX_LEN_TO_LABEL_DFLT: float = 8
 # prefixes for the notes section of the output
 PROXIMITY_INFO_PREFIX: str = "Placed based on proximity to labeled genes:"
 CLADE_INFO_PREFIX: str = "Placed based destination clade:"
-UNPLACE_PREFIX: str = "Placed based destination clade:"
+UNPLACE_PREFIX: str = "Can't be placed:"
 
 
 @click.command()
@@ -146,6 +148,7 @@ def dram_tree_kit(
     dram_directory: str = str(None),
     output_dir: str = "./",
     annotate_all: bool = False,
+    keep_temp: bool = False,
     cores: int = 10,
     logg_path: str = "phylo_tree.log",
     force: bool = False,
@@ -155,47 +158,55 @@ def dram_tree_kit(
     logger = logging.getLogger("dram_tree_log")
     setup_logger(logger, logg_path)
     tree = NXR_NAR_TREE
-    tree.set_logger(logger)
     output_dir = os.path.abspath(output_dir)
-    if not force and not os.path.exists(output_dir):
+    if not os.path.exists(output_dir):
         os.mkdir(output_dir)
     elif not force:
         raise ValueError(
             "The output_dir already exists! try using the -f flag to overwrite"
         )
-
     logger.info("Start phylogenetic tree disambiguation")
 
     logger.info("Processing annotations")
     annotations = pd.read_csv(dram_annotations, sep="\t", index_col=0)
     annotation_ids = get_ids_from_annotations_by_row(annotations, logger)
-    with TemporaryDirectory(prefix=os.path.join(output_dir, "tmp_")) as work_dir:
-        logger.info(f"Made temporary files in {work_dir}")
-        logger.info("Finding enigmatic genes")
-        trimed_fa = extract_enigmatic_genes(
-            annotation_ids, gene_fasta, work_dir, tree.target_ids, logger
-        )
-        logger.info("Placing enigmatic genes")
-        jplace_file = tree.pplacer_place_sequences(trimed_fa, work_dir, threads=cores)
-        treeph = read_phtree(jplace_file, work_dir, logger)
-        edpl = read_edpl(jplace_file, work_dir, logger)
-        known_terminals, placed_terminals = color_known_termininals(
-            treeph, annotations, tree.mapping
-        )
+    with TemporaryDirectory(dir=output_dir, prefix="tmp_") as work_dir:
+        for tree in TREES:
+            logger.info(f"Performing phylogenetic disambiguation with tree {tree.name}")
+            tree.set_logger(logger)
+            logger.info(f"Made temporary files in {work_dir}")
+            trimed_fa = extract_enigmatic_genes(
+                annotation_ids, gene_fasta, work_dir, tree.target_ids, logger
+            )
+            logger.info("Placing enigmatic genes")
+            jplace_file = tree.pplacer_place_sequences(trimed_fa, work_dir, threads=cores)
+            treeph = read_phtree(jplace_file, work_dir, logger)
+            edpl = read_edpl(jplace_file, work_dir, logger)
+            known_terminals, placed_terminals = color_known_termininals(
+                treeph, annotations, tree.mapping
+            )
 
-        logger.info("Applying labels based on location")
-        # treeph, path_df = color_tree_paths(treeph, tree)
-        get_clade_info(treeph.root, tree)
-        find_all_nearest(treeph, known_terminals, placed_terminals)
-        tree_df = make_df_of_tree(
-            placed_terminals, tree.name, max_len_to_label, min_dif_len_ratio, logger
-        )
-        write_files(tree_df, treeph, jplace_file, output_dir, logger)
-        end_message(tree_df, tree.name, logger)
+            logger.info("Applying labels based on location")
+            # treeph, path_df = color_tree_paths(treeph, tree)
+            get_clade_info(treeph.root, tree)
+            find_all_nearest(treeph, known_terminals, placed_terminals)
+            logger.info("Applying labels based on proximity")
+            tree_df = make_df_of_tree(
+                placed_terminals, tree.name, edpl, max_len_to_label, min_dif_len_ratio
+            )
+            logger.info("Writing output, to {output_dir}")
+            write_files(tree.name, tree_df, treeph, jplace_file, output_dir, work_dir, keep_temp)
+            logger.info(end_message(tree_df, tree.name))
+
+"""
+import os
+os.system('test_env/bin/python3 dram_tree_kit/dram_phylo_tree.py  -f -a tests/data/mini_nxr_nar_annotations.tsv -g tests/data/mini_nxr_nar_genes.faa -c 30')
+dram_tree_kit()
+"""
 
 
 def extract_enigmatic_genes(
-    annotation_ids: pd.DataFrame,
+    annotation_ids: pd.Series,
     gene_fasta: str,
     work_dir: str,
     target_ids: set,
@@ -211,6 +222,7 @@ def extract_enigmatic_genes(
 
     Takes in a fasta file of genes and a list of ids in the dram annotation, and returns a filtered fasta to match.
     """
+    logger.info("Finding enigmatic genes")
     output_fasta = os.path.join(work_dir, "trim.faa")
     ids_keep = annotation_ids[
         annotation_ids.apply(lambda x: len(x.intersection(target_ids)) > 0)
@@ -224,97 +236,26 @@ def extract_enigmatic_genes(
     return output_fasta
 
 
-def write_files(
-    tree_df: pd.DataFrame,
-    treeph,
+def read_phtree(
     jplace_file: str,
-    output_dir: str,
+    work_dir: str,
     logger: logging.Logger,
 ):
-    logger.info("Writing output, to {output_dir}")
-    tree_df.to_csv(os.path.join(output_dir, f"{tree.name}_tree_data.tsv"), sep="\t")
-    phy.write(
-        treeph,
-        os.path.join(output_dir, f"{tree.name}_labeled_tree.xml"),
-        "phyloxml",
+    placed_tree_file = os.path.join(work_dir, "placed_tree.nh")
+    _ = run_process(
+        [
+            "guppy",
+            "tog",
+            "-o",
+            placed_tree_file,
+            jplace_file,
+        ],
+        logger,
+        capture_stdout=True,
     )
-    os.rename(
-        jplace_file,
-        os.path.join(output_dir, f"{tree.name}.jplace"),
-    )
-
-
-def end_message(tree_df: pd.DataFrame, tree_name: str, logger: logging.Logger):
-    info_col = f"{tree_name}_placement_info"
-    full_len = len(tree_df)
-    clade_len = sum(tree_df[info_col].startswith(CLADE_INFO_PREFIX))
-    prox_len = sum(tree_df[info_col].startswith(PROXIMITY_INFO_PREFIX))
-    fail_len = sum(tree_df[info_col].startswith(UNPLACE_PREFIX))
-
-    logger.info(
-        "Run phylogenetic disambiguation complete.\n"
-        f"Of the {full_len} that request phylogenetic "
-        f"placement, {clade_len} genes where placed "
-        f"based on the clade they fell into, {prox_len}"
-        f"were classified based on the relative distance"
-        f" to labeled nodes. There were {fail_len} genes"
-        f" that could not be placed and so remain ambiguous"
-    )
-
-
-def clade_info_to_series(
-    clade: Clade, tree_name: str, max_len_to_label: float, min_dif_len_ratio: float
-) -> pd.Series:
-    """
-    Note that we use labeled nodes for distace, so the distace is not to the root of a clade but to its nearest endpoint in such a clade this could have un-expected conciquences but it means that we ground our choices in known genes and not in emergent behavure of clades and the lableing algorithm.
-
-    """
-    delta: float = None
-    if clade.label is not None:
-        label = clade.label
-        place_info = f"Placed based destination clade: nearest gene is {clade.nearest[0].end.name}"
-        dist = clade.nearest[0].len
-    else:
-        if (dist := clade.nearest[0].len) > max_len_to_label:
-            label = UNPLACE_LABEL
-            place_info = f"Can't be placed because the distance to the nearest labeled node, is {dist}, which is more than {max_len_to_label} (the max_len_to_label filter)."
-        elif (
-            delta := clade.nearest[0].len / clade.nearest[1].len - 1
-        ) > min_dif_len_ratio:
-            label = UNPLACE_LABEL
-            place_info = f"Can't be placed because the difference between the nearest labeled and alternatively labeled nodes, is {delta}, which is less than {max_len_to_label} (the max_len_to_label filter)."
-
-        else:
-            first = clade.nearest[0]
-            second = clade.nearest[1]
-            clade.label = label = first.end.label
-            place_info = f"Placed based on proximity to labeled genes; the closes labeled gene was {first.end.name}, at distance {first.len}, the nearest counter label was {second.end.label} on gene {second.end.name} at distance {second.len}"
-    return pd.DataFrame(
-        {
-            f"{tree_name}_labels": label,
-            f"distance_to_nearest_label": dist,
-            f"difference_to_nearest_alt_label": delta,
-            f"{tree_name}_placement_info": place_info,
-        },
-        index=[clade.name],
-    )
-
-
-def make_df_of_tree(
-    placed_terminals: list[Clade],
-    tree_name: str,
-    max_len_to_label: float,
-    min_dif_len_ratio: float,
-    logger: logging.Logger,
-) -> pd.DataFrame:
-    to_searies = partial(
-        clade_info_to_series,
-        tree_name=tree_name,
-        max_len_to_label=max_len_to_label,
-        min_dif_len_ratio=min_dif_len_ratio,
-    )
-    logger.info("Applying labels based on proximity")
-    return pd.concat([to_searies(i) for i in placed_terminals], axis=0)
+    treeph = phy.read(placed_tree_file, format="newick")
+    # Combine gene maping and color maping into an omni maping file
+    return treeph
 
 
 def find_all_nearest(
@@ -341,44 +282,6 @@ def color_known_termininals(treeph, annotations, mapping):
             None if cl.name not in mapping.index else mapping.loc[cl.name, "color"]
         )
     return known_terminals, placed_terminals
-
-
-def distance_to_call(row, jplace, annotations, mapping, logger):
-    _ = run_process(["guppy", "distmat", jplace], logger, capture_stdout=True)
-    place_seq: str = str(None)
-    call_id: str = str(None)
-    for name in [row[PLACEMAT_NAME_1_COL], row[PLACEMAT_NAME_2_COL]]:
-        if name in annotations.index and place_seq is None:
-            place_seq = name
-            continue
-        if name in mapping.index and call_id is None:
-            call_id = mapping.loc[name]
-            continue
-    return pd.Series(
-        {"seq": place_seq, "col": call_id, "distance": row[PLACEMAT_DISTANCE_COL]}
-    )
-
-
-def read_phtree(
-    jplace_file: str,
-    work_dir: str,
-    logger: logging.Logger,
-):
-    placed_tree_file = os.path.join(work_dir, "placed_tree.nh")
-    _ = run_process(
-        [
-            "guppy",
-            "tog",
-            "-o",
-            placed_tree_file,
-            jplace_file,
-        ],
-        logger,
-        capture_stdout=True,
-    )
-    treeph = phy.read(placed_tree_file, format="newick")
-    # Combine gene maping and color maping into an omni maping file
-    return treeph
 
 
 def read_edpl(
@@ -444,7 +347,7 @@ def apply_labels(clade: Clade, label: str):
         apply_labels(i, label)
 
 
-def breath_search(clade):
+def breath_search(clade: Clade):
     clades = [i for i in clade]
     while len(clades) > 0:
         for i in clades:
@@ -452,7 +355,7 @@ def breath_search(clade):
         clades = [j for i in clades for j in i]
 
 
-def apply_names(clade, name: str = "multiple"):
+def apply_names(clade: Clade, name: str = "multiple"):
     clade.name = name
     names_num = {}
     for i, c in enumerate(breath_search(clade)):
@@ -469,7 +372,7 @@ def apply_names(clade, name: str = "multiple"):
             apply_names(c, f"{name}-{names_num[name]}")
 
 
-def all_parents(tree):
+def all_parents(tree: Tree):
     parents = {}
     for clade in tree.find_clades(order="level"):
         for child in clade:
@@ -477,14 +380,16 @@ def all_parents(tree):
     return parents
 
 
+PathNode = namedtuple("PathNode", ["end", "len"])
+
+
 def find_distances(
-    clade, known_terminals: set[str], parents: dict, skip_label: str = str(None)
-) -> Any:
-    PathNode = namedtuple("PathNode", ["end", "len"])
+    clade: Clade, known_terminals: set[str], parents: dict, skip_label: str = str(None)
+) -> PathNode:
     past = clade
     present = PathNode(parents[clade], clade.branch_length)
     min_dist = float("inf")
-    nearest = None
+    nearest = PathNode(None, None)
     while present.len < min_dist:
         paths = [
             PathNode(i, i.branch_length + present.len) for i in present.end if i != past
@@ -575,10 +480,6 @@ def pull_labes_from_tree():
     pass
 
 
-if __name__ == "__main__":
-    dram_tree_kit()
-
-
 """
 Notes: 
    the to_networkx comand works but it can get complicated this may be needed later 
@@ -593,3 +494,108 @@ logger = logging.getLogger('dram_tree_log')
 annotations = pd.read_csv('example_one/all_bins_combined_3217db_ACTIVE_GENES_annotations.txt', sep='\t', index_col=0)
 jplace_file = 'example_place_output.jplace'
 """
+
+
+def clade_info_to_series(
+    clade: Clade, tree_name: str, max_len_to_label: float, min_dif_len_ratio: float
+) -> pd.DataFrame:
+    """
+    Note that we use labeled nodes for distace, so the distace is not to the root of a clade but to its nearest endpoint in such a clade this could have un-expected conciquences but it means that we ground our choices in known genes and not in emergent behavure of clades and the lableing algorithm.
+
+    """
+    delta: float = None
+    if clade.label is not None:
+        label = clade.label
+        place_info = f"{CLADE_INFO_PREFIX} Nearest gene is {clade.nearest[0].end.name}"
+        dist = clade.nearest[0].len
+    else:
+        if (dist := clade.nearest[0].len) > max_len_to_label:
+            label = UNPLACE_LABEL
+            place_info = f"{UNPLACE_PREFIX} The distance to the nearest labeled node, is {dist}, which is more than {max_len_to_label} (the max_len_to_label filter)."
+        elif (
+            delta := clade.nearest[0].len / clade.nearest[1].len - 1
+        ) > min_dif_len_ratio:
+            label = UNPLACE_LABEL
+            place_info = f"{UNPLACE_PREFIX} The difference between the nearest labeled and alternatively labeled nodes, is {delta}, which is less than {max_len_to_label} (the max_len_to_label filter)."
+
+        else:
+            first = clade.nearest[0]
+            second = clade.nearest[1]
+            clade.label = label = first.end.label
+            place_info = f"{PROXIMITY_INFO_PREFIX} the closes labeled gene was {first.end.name}, at distance {first.len}, the nearest counter label was {second.end.label} on gene {second.end.name} at distance {second.len}"
+    return pd.DataFrame(
+        {
+            f"{tree_name}_labels": label,
+            f"distance_to_nearest_label": dist,
+            f"difference_to_nearest_alt_label": delta,
+            f"{tree_name}_placement_info": place_info,
+        },
+        index=[clade.name],
+    )
+
+
+def make_df_of_tree(
+    placed_terminals: list[Clade],
+    tree_name: str,
+    edpl: pd.DataFrame,
+    max_len_to_label: float,
+    min_dif_len_ratio: float,
+) -> pd.DataFrame:
+    to_searies = partial(
+        clade_info_to_series,
+        tree_name=tree_name,
+        max_len_to_label=max_len_to_label,
+        min_dif_len_ratio=min_dif_len_ratio,
+    )
+    data = pd.concat([to_searies(i) for i in placed_terminals], axis=0).merge(
+        edpl, left_index=True, right_index=True, how="left", copy=False
+    )
+    return data
+
+
+def write_files(
+    tree_name: str,
+    tree_df: pd.DataFrame,
+    treeph: Tree,
+    jplace_file: str,
+    output_dir: str,
+    work_dir: str,
+    keep_temp: bool
+):
+    tree_df.to_csv(os.path.join(output_dir, f"{tree_name}_tree_data.tsv"), sep="\t")
+    phy.write(
+        treeph,
+        os.path.join(output_dir, f"{tree_name}_labeled_tree.xml"),
+        "phyloxml",
+    )
+    os.rename(
+        jplace_file,
+        os.path.join(output_dir, f"{tree_name}.jplace"),
+    )
+    if keep_temp:
+        os.rename(
+            work_dir,
+            os.path.join(output_dir, f"{tree_name}_working_dir"),
+        )
+        
+
+
+def end_message(tree_df: pd.DataFrame, tree_name: str) -> str:
+    info_col = f"{tree_name}_placement_info"
+    full_len = len(tree_df)
+    clade_len = sum(tree_df[info_col].str.startswith(CLADE_INFO_PREFIX))
+    prox_len = sum(tree_df[info_col].str.startswith(PROXIMITY_INFO_PREFIX))
+    fail_len = sum(tree_df[info_col].str.startswith(UNPLACE_PREFIX))
+    return (
+        "Run phylogenetic disambiguation complete."
+        f"\nOf the {full_len} that request phylogenetic"
+        f" placement, {clade_len} genes where placed"
+        f" based on the clade they fell into, {prox_len}"
+        f" were classified based on the relative distance"
+        f" to labeled nodes. There were {fail_len} genes"
+        f" that could not be placed and so remain ambiguous"
+    )
+
+
+if __name__ == "__main__":
+    dram_tree_kit()
